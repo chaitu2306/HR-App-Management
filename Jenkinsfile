@@ -45,14 +45,11 @@ pipeline {
         }
 
         stage('Login to AWS ECR') {
-            environment {
-                AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
-                AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
-                AWS_DEFAULT_REGION = "${AWS_REGION}"
-            }
             steps {
-                script {
-                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}"
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    script {
+                        sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}"
+                    }
                 }
             }
         }
@@ -74,7 +71,6 @@ pipeline {
             echo "   - AWS ECR: ${ECR_REPO_URI}:${VERSION_TAG}"
         }
         always {
-            // Cleanup Docker to save disk space
             sh "docker system prune -f"
         }
     }
