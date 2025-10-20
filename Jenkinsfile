@@ -45,11 +45,14 @@ pipeline {
         }
 
         stage('Login to AWS ECR') {
+            environment {
+                AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
+                AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
+                AWS_DEFAULT_REGION = "${AWS_REGION}"
+            }
             steps {
-                withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
-                    script {
-                        sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}"
-                    }
+                script {
+                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO_URI}"
                 }
             }
         }
