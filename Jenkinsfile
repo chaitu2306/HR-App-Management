@@ -2,34 +2,30 @@ pipeline {
     agent any
 
     environment {
-        // Basic configuration
         AWS_REGION = 'us-east-1'
         ECR_REPO_URI = '379632383754.dkr.ecr.us-east-1.amazonaws.com/hr-app-management'
         IMAGE_NAME = 'hr-app-management'
         DOCKER_HUB_REPO = 'chaitu2003/hr-app-management'
+        VERSION_TAG = "v${env.BUILD_NUMBER}"
     }
 
     stages {
         stage('Checkout Source Code') {
             steps {
-                git branch: 'master', url: 'https://github.com/chaitu2306/HR-App-Management.git'
+                checkout([$class: 'GitSCM',
+                    branches: [[name: '*/master']],
+                    userRemoteConfigs: [[url: 'https://github.com/chaitu2306/HR-App-Management.git']],
+                    extensions: [[$class: 'CloneOption', timeout: 10, depth: 1]]
+                ])
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build tag using Jenkins build number
-                    VERSION_TAG = "v${env.BUILD_NUMBER}"
-
-                    // Build Docker image
                     sh "docker build -t ${IMAGE_NAME}:${VERSION_TAG} ."
-
-                    // Tag for Docker Hub
                     sh "docker tag ${IMAGE_NAME}:${VERSION_TAG} ${DOCKER_HUB_REPO}:${VERSION_TAG}"
                     sh "docker tag ${IMAGE_NAME}:${VERSION_TAG} ${DOCKER_HUB_REPO}:latest"
-
-                    // Tag for AWS ECR
                     sh "docker tag ${IMAGE_NAME}:${VERSION_TAG} ${ECR_REPO_URI}:${VERSION_TAG}"
                     sh "docker tag ${IMAGE_NAME}:${VERSION_TAG} ${ECR_REPO_URI}:latest"
                 }
@@ -75,8 +71,9 @@ pipeline {
             echo "   - AWS ECR: ${ECR_REPO_URI}:${VERSION_TAG}"
         }
         always {
-            // Optional cleanup to save space
-            sh "docker system prune -f"
+            node {
+                sh "docker system prune -f"
+            }
         }
     }
 }
