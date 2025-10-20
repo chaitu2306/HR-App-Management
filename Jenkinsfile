@@ -71,9 +71,8 @@ pipeline {
             echo "   - AWS ECR: ${ECR_REPO_URI}:${VERSION_TAG}"
         }
         always {
-            node {
-                sh "docker system prune -f"
-            }
+            // Cleanup Docker to save disk space
+            sh "docker system prune -f"
         }
     }
 }
